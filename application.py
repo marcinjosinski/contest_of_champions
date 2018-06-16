@@ -9,9 +9,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 app = create_app()
 
-
-@app.cli.command()
-def deploy():
-    with app.app_context():
-        upgrade()
-        Group.establish_enemies()
+with app.app_context():
+    upgrade()
+    Group.establish_enemies()

@@ -8,7 +8,7 @@ services:
     links:
       - db:mysql
     container_name: contest_api_web
-    command: flask deploy && /usr/local/bin/gunicorn -w 2 -b :5000 application:app
+    command: /usr/local/bin/gunicorn -w 2 -b :5000 application:app
     depends_on:
       - db
   db:

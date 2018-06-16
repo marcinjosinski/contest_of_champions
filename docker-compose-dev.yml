@@ -12,7 +12,7 @@ services:
     container_name: contest_api_web
     environment:
       - FLASK_DEBUG=1
-    command: flask deploy && flask run --host=0.0.0.0
+    command: flask run --host=0.0.0.0
     depends_on:
       - db
   db:

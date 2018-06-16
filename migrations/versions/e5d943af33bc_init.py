@@ -8,6 +8,7 @@ Create Date: 2018-06-16 23:10:46.033083
 from alembic import op
 import sqlalchemy as sa
 
+from app.models import GroupType
 
 # revision identifiers, used by Alembic.
 revision = 'e5d943af33bc'
@@ -29,7 +30,7 @@ def upgrade():
     op.create_index(op.f('ix_fights_beaten_name'), 'fights', ['beaten_name'], unique=False)
     op.create_index(op.f('ix_fights_killed'), 'fights', ['killed'], unique=False)
     op.create_index(op.f('ix_fights_winner_name'), 'fights', ['winner_name'], unique=False)
-    op.create_table('groups',
+    group_table = op.create_table('groups',
     sa.Column('type', sa.Enum('NONE', 'HUMAN', 'MYSTIC', 'MUTANT', name='grouptype'), nullable=False),
     sa.Column('enemies', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('type')
@@ -50,6 +51,18 @@ def upgrade():
     op.create_index(op.f('ix_heroes_name'), 'heroes', ['name'], unique=True)
     op.create_index(op.f('ix_heroes_password_hash'), 'heroes', ['password_hash'], unique=False)
     # ### end Alembic commands ###
+
+    # Seed data
+
+    op.bulk_insert(
+        group_table,
+        [
+            {'type': GroupType.HUMAN.name},
+            {'type': GroupType.MYSTIC.name},
+            {'type': GroupType.MUTANT.name},
+            {'type': GroupType.NONE.name}
+        ]
+    )
 
 
 def downgrade():

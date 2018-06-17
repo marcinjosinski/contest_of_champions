@@ -5,10 +5,13 @@ Revises:
 Create Date: 2018-06-16 23:10:46.033083
 
 """
+import uuid
+
 from alembic import op
 import sqlalchemy as sa
+from werkzeug.security import generate_password_hash
 
-from app.models import GroupType
+from app.models import GroupType, Permission
 
 # revision identifiers, used by Alembic.
 revision = 'e5d943af33bc'
@@ -30,12 +33,12 @@ def upgrade():
     op.create_index(op.f('ix_fights_beaten_name'), 'fights', ['beaten_name'], unique=False)
     op.create_index(op.f('ix_fights_killed'), 'fights', ['killed'], unique=False)
     op.create_index(op.f('ix_fights_winner_name'), 'fights', ['winner_name'], unique=False)
-    group_table = op.create_table('groups',
+    groups_table = op.create_table('groups',
     sa.Column('type', sa.Enum('NONE', 'HUMAN', 'MYSTIC', 'MUTANT', name='grouptype'), nullable=False),
     sa.Column('enemies', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('type')
     )
-    op.create_table('heroes',
+    heroes_table = op.create_table('heroes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('public_id', sa.String(length=50), nullable=True),
     sa.Column('name', sa.String(length=32), nullable=True),
@@ -55,12 +58,54 @@ def upgrade():
     # Seed data
 
     op.bulk_insert(
-        group_table,
+        groups_table,
         [
             {'type': GroupType.HUMAN.name},
             {'type': GroupType.MYSTIC.name},
             {'type': GroupType.MUTANT.name},
             {'type': GroupType.NONE.name}
+        ]
+    )
+
+    op.bulk_insert(
+        heroes_table,
+        [
+            {
+                'name': 'Grandmaster',
+                'public_id': str(uuid.uuid4()),
+                'password_hash': generate_password_hash('Haslo'),
+                'health': 100,
+                'permissions': Permission.ADMIN,
+                'group_id': GroupType.NONE.name,
+                'is_participant': False
+            },
+            {
+                'name': 'Hulk',
+                'public_id': str(uuid.uuid4()),
+                'password_hash': generate_password_hash('Hulk'),
+                'health': 100,
+                'permissions': Permission.NORMAL,
+                'group_id': GroupType.MUTANT.name,
+                'is_participant': True
+            },
+            {
+                'name': 'Guilotine',
+                'public_id': str(uuid.uuid4()),
+                'password_hash': generate_password_hash('12345'),
+                'health': 100,
+                'permissions': Permission.NORMAL,
+                'group_id': GroupType.MYSTIC.name,
+                'is_participant': True
+            },
+            {
+                'name': 'Grzesiek',
+                'public_id': str(uuid.uuid4()),
+                'password_hash': generate_password_hash('misiek'),
+                'health': 100,
+                'permissions': Permission.NORMAL,
+                'group_id': GroupType.HUMAN.name,
+                'is_participant': True
+            },
         ]
     )
 

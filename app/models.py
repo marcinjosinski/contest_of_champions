@@ -1,7 +1,9 @@
 import enum
+import uuid
+
 from . import db
 from datetime import datetime
-
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class Permission:
     NORMAL = 1
@@ -29,6 +31,34 @@ class Hero(db.Model):
     group_id = db.Column(db.Enum(GroupType), db.ForeignKey('groups.type'))
     is_participant = db.Column(db.Boolean, default=True)
 
+    def __repr__(self):
+        return '<Hero {}>'.format(self.name)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def set_public_id(self):
+        self.public_id = str(uuid.uuid4())
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        hero_dict = {
+            'public_id': self.public_id,
+            'name': self.name,
+            'health': self.health,
+            'group_id': self.group_id,
+        }
+        return hero_dict
+
+    def from_dict(self, data):
+        for field in ['name', 'health', 'group_id']:
+            if field in data:
+                setattr(self, field, data[field])
+            if 'password' in data:
+                self.set_public_id()
+                self.set_password(data['password'])
 
 
 class Group(db.Model):

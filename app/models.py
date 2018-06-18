@@ -1,6 +1,9 @@
 import enum
+import uuid
+
 from . import db
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class Permission:
@@ -29,6 +32,40 @@ class Hero(db.Model):
     group_id = db.Column(db.Enum(GroupType), db.ForeignKey('groups.type'))
     is_participant = db.Column(db.Boolean, default=True)
 
+    def __repr__(self):
+        return '<Hero {}>'.format(self.name)
+
+    def can_fight_with(self, group_type):
+        return self.group_id.value & group_type
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def set_public_id(self):
+        self.public_id = str(uuid.uuid4())
+
+    def check_public_id(self):
+        return uuid.UUID(self.public_id, version=4)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        hero_dict = {
+            'health': self.health,
+            'group_id': self.group_id.name,
+            'public_id': self.public_id,
+            'name': self.name,
+        }
+        return hero_dict
+
+    def from_dict(self, data):
+        for field in ['name', 'health', 'group_id']:
+            if field in data:
+                setattr(self, field, data[field])
+            if 'password' in data:
+                self.set_public_id()
+                self.set_password(data['password'])
 
 
 class Group(db.Model):
@@ -40,7 +77,7 @@ class Group(db.Model):
     @staticmethod
     def establish_enemies():
         enemies = {
-            'HUMAN': GroupType.MYSTIC | GroupType.MUTANT,
+            'HUMAN': GroupType.MYSTIC | GroupType.MUTANT | GroupType.HUMAN,
             'MYSTIC': GroupType.HUMAN,
             'MUTANT': GroupType.HUMAN | GroupType.MUTANT,
         }
@@ -60,3 +97,13 @@ class Fight(db.Model):
     beaten_name = db.Column(db.String(32), index=True, nullable=False)
     killed = db.Column(db.Boolean, index=True, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        fight_dict = {
+            'id': self.id,
+            'winner_name': self.winner_name,
+            'beaten_name': self.beaten_name,
+            'killed': self.killed,
+            'date': self.date
+        }
+        return fight_dict

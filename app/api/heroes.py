@@ -10,9 +10,9 @@ from flask import request, jsonify, url_for, make_response, current_app
 from app.models import Hero, Permission, GroupType, Group, Fight
 from app import db
 
-
 @api.route('/ranking')
-def ranking():
+@decorators.token_required
+def ranking(current_hero):
     # martwy bohater nie liczy sie do rankingu
     heroes = Hero.query.filter(Hero.health > 0).filter(Hero.is_participant.is_(True))
 
@@ -28,8 +28,11 @@ def ranking():
     return jsonify(output)
 
 
+
 @api.route('/deaths')
-def polegli():
+@decorators.token_required
+@decorators.grandmaster_required
+def deaths(current_hero):
 
     polegli_lista = Fight.query.filter(Fight.killed == 1)
 
@@ -47,9 +50,10 @@ def polegli():
 # REMEMBER TO ADD PROPER DATA VALIDATION / cerberus
 ###########################
 
-
 @api.route('/heroes/<public_id>', methods=['PATCH'])
-def kill_hero(public_id):
+@decorators.token_required
+@decorators.grandmaster_required
+def kill_hero(current_hero, public_id):
     hero = Hero.query.filter_by(public_id=public_id).first()
 
     if not hero:
@@ -64,7 +68,9 @@ def kill_hero(public_id):
 
 
 @api.route('/heroes/<public_id>', methods=['DELETE'])
-def delete_hero(public_id):
+@decorators.token_required
+@decorators.grandmaster_required
+def delete_hero(current_hero, public_id):
 
     hero = Hero.query.filter_by(public_id=public_id).first()
 
@@ -89,7 +95,9 @@ def get_hero(current_hero, public_id):
 
 
 @api.route('/heroes', methods=['GET'])
-def get_all_heroes():
+@decorators.token_required
+@decorators.grandmaster_required
+def get_all_heroes(current_hero):
     heroes = Hero.query.all()
 
     output = []
@@ -101,7 +109,9 @@ def get_all_heroes():
 
 
 @api.route('/heroes', methods=['POST'])
-def create_hero():
+@decorators.token_required
+@decorators.grandmaster_required
+def create_hero(current_hero):
     data = request.get_json() or {}
 
     if 'name' not in data or 'password' not in data or 'group_id' not in data:
@@ -133,7 +143,7 @@ def login():
     if hero.check_password(auth.password):
         token = jwt.encode({
             'public_id': hero.public_id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
             }, current_app.config['SECRET_KEY'])
         return jsonify({'token': token.decode('UTF-8')})
 
@@ -143,9 +153,9 @@ def login():
 # UGLY CODE, TO REFACTOR TODAY
 
 @api.route('/fights', methods=['POST'])
-# @decorators.token_required
-# @decorators.grandmaster_required
-def add_fight():
+@decorators.token_required
+@decorators.grandmaster_required
+def add_fight(current_hero):
     heroes = Hero.query.filter(Hero.health > 0).filter(Hero.is_participant.is_(True))
 
     output = []

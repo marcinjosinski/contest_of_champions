@@ -47,4 +47,3 @@ def permission_required(permission):
 
 def grandmaster_required(f):
     return permission_required(Permission.ADMIN)(f)
-

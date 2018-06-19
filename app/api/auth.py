@@ -2,7 +2,7 @@ import datetime
 import jwt
 
 from . import api, errors
-from flask import request, jsonify, make_response, current_app
+from flask import request, jsonify, current_app
 from app.models import Hero
 
 

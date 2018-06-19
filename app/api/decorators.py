@@ -27,7 +27,7 @@ def token_required(f):
         except jwt.ExpiredSignatureError:
             return errors.unauthorized('Signature has expired')
         except:
-            return errors.unauthorized('Token is invalid') # 401
+            return errors.unauthorized('Token is invalid')
 
         return f(hero, *args, **kwargs)
 
@@ -39,7 +39,7 @@ def permission_required(permission):
         @wraps(f)
         def decorated(*args, **kwargs):
             if g.current_hero.permissions != permission:
-                return errors.unauthorized('Permission failed')
+                return errors.unauthorized('You do not have permissions to look here')
             return f(*args, **kwargs)
         return decorated
     return decorator

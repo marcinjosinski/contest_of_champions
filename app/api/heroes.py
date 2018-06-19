@@ -1,49 +1,7 @@
-import datetime
-import random
-import itertools
-from collections import OrderedDict
-
-import jwt
-
 from . import api, errors, decorators
-from flask import request, jsonify, url_for, make_response, current_app
-from app.models import Hero, Permission, GroupType, Group, Fight
+from flask import request, jsonify, url_for
+from app.models import Hero
 from app import db
-
-@api.route('/ranking')
-@decorators.token_required
-def ranking(current_hero):
-    # martwy bohater nie liczy sie do rankingu
-    heroes = Hero.query.filter(Hero.health > 0).filter(Hero.is_participant.is_(True))
-
-    output = []
-
-    for hero in heroes:
-        walki_hero_lost =  Fight.query.filter_by(beaten_name=hero.name).count()
-        walki_hero_won = Fight.query.filter_by(winner_name=hero.name).count()
-        if walki_hero_lost == 0 and walki_hero_won == 0:
-            continue
-        output.append({'name': hero.name, 'wygranych': walki_hero_won, 'przegranych': walki_hero_lost})
-
-    return jsonify(output)
-
-
-
-@api.route('/deaths')
-@decorators.token_required
-@decorators.grandmaster_required
-def deaths(current_hero):
-
-    polegli_lista = Fight.query.filter(Fight.killed == 1)
-
-    output = []
-
-    for polegly in polegli_lista:
-        ilosc_wygranych_lista = Fight.query.filter(Fight.winner_name == polegly.beaten_name).count()
-        output.append((ilosc_wygranych_lista, {'name': polegly.beaten_name, 'date': polegly.date, 'ilosc wygranych': ilosc_wygranych_lista}))
-
-    result = sorted(output, key=lambda tup: tup[0], reverse=True)
-    return jsonify([i[1] for i in result])
 
 
 ###########################
@@ -127,62 +85,3 @@ def create_hero(current_hero):
     response.headers['Location'] = url_for('api.get_hero', public_id=hero.public_id)
     return response
 
-
-@api.route('/login')
-def login():
-    auth = request.authorization
-
-    if not auth or not auth.username or not auth.password:
-        return make_response('Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
-
-    hero = Hero.query.filter_by(name=auth.username).first()
-
-    if not hero:
-        return make_response('Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
-
-    if hero.check_password(auth.password):
-        token = jwt.encode({
-            'public_id': hero.public_id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-            }, current_app.config['SECRET_KEY'])
-        return jsonify({'token': token.decode('UTF-8')})
-
-    return make_response('Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'})
-
-
-# UGLY CODE, TO REFACTOR TODAY
-
-@api.route('/fights', methods=['POST'])
-@decorators.token_required
-@decorators.grandmaster_required
-def add_fight(current_hero):
-    heroes = Hero.query.filter(Hero.health > 0).filter(Hero.is_participant.is_(True))
-
-    output = []
-
-    for hero in heroes:
-        output.append(hero)
-
-    random.shuffle(output)
-
-    output2 = list(itertools.combinations(output, 2))
-
-    for hero1, hero2 in output2:
-        hero1_enemies = Group.query.filter_by(type=hero1.group_id).first()
-        hero2_enemies = Group.query.filter_by(type=hero2.group_id).first()
-        if hero1.can_fight_with(hero1_enemies.enemies) or hero2.can_fight_with(hero2_enemies.enemies):
-            winner = random.choice([hero1.name, hero2.name])
-            looser = ""
-            if winner == hero1.name:
-                looser = hero2
-            else:
-                looser = hero1
-
-            looser.health = looser.health - random.randint(1, 100)
-
-            fight = Fight(winner_name=winner, beaten_name=looser.name, killed=looser.health < 0,
-                          date=datetime.datetime.utcnow())
-            db.session.add(fight)
-            db.session.commit()
-            return jsonify(fight.to_dict())
-    return jsonify({'error': 'There is no characters to fight'})

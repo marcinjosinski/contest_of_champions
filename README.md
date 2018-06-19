@@ -1,5 +1,5 @@
 # contest_of_champions
-Management system for the gladiatorial event organised by Grandmaster on :new_moon:
+Management system for the gladiatorial event organised by Grandmaster on Sakaar :new_moon:
 
 # Running the application
 
@@ -8,7 +8,8 @@ Management system for the gladiatorial event organised by Grandmaster on :new_mo
 - Start the app: `docker-compose -f docker-compose-prod.yml up -d`
 - API is available on http://localhost:80
 
-# Running the tests
+# To run tests
+
 - `docker exec -it contest_api_web python3 -m pytest -v`
 
 # API Documentation
@@ -68,6 +69,7 @@ Management system for the gladiatorial event organised by Grandmaster on :new_mo
 
 
 - GET **/ranking**
+
     Return the ranking of living heroes.<br>
     This request must be authenticated using an authentication token with normal permissions<br>
     In the case of success a status code 200 is returned.<br>
@@ -75,11 +77,89 @@ Management system for the gladiatorial event organised by Grandmaster on :new_mo
     
 
 - GET **/deaths**
+
     Return the sorted list of those lost in battles.<br>
     This request must be authenticated using an authentication token with Grandmaster permissions<br>
     In the case of success a status code 200 is returned.<br>
     On failure status code 401 is returned.<br>
 
     
-# Examples
+# Some examples
 
+`curl` command to log in as a `Grandmaster` with password:<br>
+(Credentials of existing users are located in migrations directory)
+
+```
+$ curl -u Grandmaster:grandpass -i -X GET http://localhost/login
+
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 191
+Server: Werkzeug/0.14.1 Python/3.6.5
+Date: Tue, 19 Jun 2018 03:13:45 GMT
+
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwdWJsaWNfaWQiOiI0MjJlYTFjMi00NzExLTRjMzYtYmM5MC0zNzRjMjI4OTkyNWEiLCJleHAiOjE1MjkzNzg5MjV9.WObcyClF8dBceUvl93UJMoyswVYUNY269K5LPJuSax8"
+}
+
+```
+And now we can use the token to get access to protected resources<br>
+For example: <br>
+`curl` command to register a new hero
+```
+$ curl -i -X POST http://localhost/heroes -H "Content-Type: application/json" -H "x-access-token:eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwdWJsaWNfaWQiOiI0MjJlYTFjMi00NzExLTRjMzYtYmM5MC0zNzRjMjI4OTkyNWEiLCJleHAiOjE1MjkzNzg5MjV9.WObcyClF8dBceUvl93UJMoyswVYUNY269K5LPJuSax8" -d  '{"name": "Presidente", "password": "123", "group": "HUMAN"}' 
+
+HTTP/1.0 201 CREATED
+Content-Type: application/json
+Content-Length: 125
+Location: http://localhost/heroes/1cf62ef4-212e-484c-a766-3ecda8b4a594
+Server: Werkzeug/0.14.1 Python/3.6.5
+Date: Tue, 19 Jun 2018 03:37:40 GMT
+
+{
+  "group": "HUMAN", 
+  "health": 100, 
+  "name": "Presidente", 
+  "public_id": "1cf62ef4-212e-484c-a766-3ecda8b4a594"
+}
+
+```
+
+`curl` command to get list of heroes
+
+```
+$ curl -i -X GET http://localhost/heroes -H "x-access-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwdWJsaWNfaWQiOiI0MjJlYTFjMi00NzExLTRjMzYtYmM5MC0zNzRjMjI4OTkyNWEiLCJleHAiOjE1MjkzNzg5MjV9.WObcyClF8dBceUvl93UJMoyswVYUNY269K5LPJuSax8"
+
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 551
+Server: Werkzeug/0.14.1 Python/3.6.5
+Date: Tue, 19 Jun 2018 03:21:52 GMT
+
+[
+  {
+    "group": "NONE", 
+    "health": 100, 
+    "name": "Grandmaster", 
+    "public_id": "422ea1c2-4711-4c36-bc90-374c2289925a"
+  }, 
+  {
+    "group": "MUTANT", 
+    "health": 100, 
+    "name": "Hulk", 
+    "public_id": "8eead8ef-65c8-45c5-8095-d1c055cc6d19"
+  }, 
+  {
+    "group": "MYSTIC", 
+    "health": 100, 
+    "name": "Guilotine", 
+    "public_id": "79b251d7-a6ad-4784-b417-1c3ee78b348d"
+  }, 
+  {
+    "group": "HUMAN", 
+    "health": 100, 
+    "name": "Grzesiek", 
+    "public_id": "77a9ae20-b5f1-41ba-b40d-f1252c5883d6"
+  }
+]
+```

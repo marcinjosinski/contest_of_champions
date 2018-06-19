@@ -73,7 +73,7 @@ def upgrade():
             {
                 'name': 'Grandmaster',
                 'public_id': str(uuid.uuid4()),
-                'password_hash': generate_password_hash('Haslo'),
+                'password_hash': generate_password_hash('grandpass'),
                 'health': 100,
                 'permissions': Permission.ADMIN,
                 'group_id': GroupType.NONE.name,
